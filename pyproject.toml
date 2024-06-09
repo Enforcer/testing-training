@@ -1,0 +1,53 @@
+[tool.poetry]
+name = "testing-training"
+version = "0.1.0"
+description = ""
+authors = ["Sebastian Buczyński <nnplaya@gmail.com>"]
+license = "MIT"
+readme = "README.md"
+
+[tool.poetry.dependencies]
+python = "^3.12"
+pydantic-settings = "*"
+fastapi = {version = "*", extras = ["all"]}
+sqlalchemy = "*"
+pydantic = "*"
+jinja2 = "*"
+python-multipart = "*"
+httpx = "*"
+attrs = "*"
+
+
+[tool.poetry.group.dev.dependencies]
+pytest = "*"
+selenium = "*"
+ruff = "*"
+pyright = "*"
+mockito = "*"
+pytest-mockito = "*"
+pytest-cov = "*"
+pytest-sugar = "*"
+hypothesis = "*"
+mutmut = "*"
+vcrpy = "*"
+selene = "*"
+yappi = "*"
+snakeviz = "*"
+pytest-xdist = "*"
+pytest-asyncio = "*"
+factory-boy = "*"
+tavern = "*"
+pytest-randomly = "*"
+
+[tool.pytest.ini_options]
+testpaths = [
+  "tests",
+]
+addopts = '-p no:sugar'
+filterwarnings = [
+    'ignore:ast.* is deprecated.*:DeprecationWarning',
+]
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"

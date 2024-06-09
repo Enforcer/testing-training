@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="/static/bulma.min.css">
+    <title>Vending Machine Resupplier</title>
+</head>
+<body>
+    <!-- Navbar -->
+    <nav class="navbar is-primary" role="navigation" aria-label="main navigation">
+        <div class="navbar-brand">
+            <a class="navbar-item" href="#">
+                <strong>Resupplier Assistant</strong>
+            </a>
+        </div>
+    </nav>
+
+    <!-- Main Container -->
+    <div class="container">
+        <div class="columns">
+            <!-- Sidebar: Vending Machines List -->
+            <div class="column is-one-quarter">
+                <aside class="menu">
+                    <p class="menu-label">
+                        Vending Machines in this building
+                    </p>
+                    <ul class="menu-list">
+                        <li><a class="is-active">Machine 1</a></li>
+                        <li><a>Machine 2</a></li>
+                        <li><a>Machine 3</a></li>
+                        <li><a>Machine 4</a></li>
+                        <!-- Add more machines as needed -->
+                    </ul>
+                </aside>
+            </div>
+
+            <!-- Main Content: Machine Details and Form -->
+            <div class="column">
+                <!-- Machine Details -->
+                <div class="box">
+                    <h3 class="title is-4">Machine 1 Details</h3>
+                    <p><strong>Location:</strong> Building A, Floor 2</p>
+                    <p><strong>Status:</strong> Operational</p>
+                    <p><strong>Items to Restock:</strong></p>
+                    <ul>
+                        <li>Item 1: 10 remaining</li>
+                        <li>Item 2: 5 remaining</li>
+                        <li>Item 3: 2 remaining</li>
+                        <!-- Add more items as needed -->
+                    </ul>
+                </div>
+
+                <!-- Resupply Form -->
+                <div class="box">
+                    <h3 class="title is-4">Update Status / Resupply</h3>
+                    <form method="POST">
+                        <!-- Update Status -->
+                        <div class="field">
+                            <label class="label">Update Status</label>
+                            <div class="control">
+                                <div class="select">
+                                    <select name="machine_status">
+                                        <option value="operational" {% if machine_status == "operational" %}selected="selected"{% endif %}>Operational</option>
+                                        <option value="needs_maintenance" {% if machine_status == "needs_maintenance" %}selected="selected"{% endif %}>Needs Maintenance</option>
+                                        <option value="out_of_order" {% if machine_status == "out_of_order" %}selected="selected"{% endif %}>Out of Order</option>
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Resupply Items -->
+                        <div class="field">
+                            <label class="label">Resupply Items</label>
+                            <div class="control">
+                                <div class="columns is-multiline">
+                                    <!-- Item 1 -->
+                                    <div class="column is-half">
+                                        <div class="field">
+                                            <label class="label">Item 1</label>
+                                            <div class="control">
+                                                <input class="input" type="number" placeholder="Quantity">
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <!-- Item 2 -->
+                                    <div class="column is-half">
+                                        <div class="field">
+                                            <label class="label">Item 2</label>
+                                            <div class="control">
+                                                <input class="input" type="number" placeholder="Quantity">
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <!-- Add more items as needed -->
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Submit Button -->
+                        <div class="field is-grouped">
+                            <div class="control">
+                                <button class="button is-link" id="submit">Submit</button>
+                            </div>
+                            <div class="control">
+                                <button class="button is-link is-light">Cancel</button>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</body>
+</html>
