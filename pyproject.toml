@@ -46,6 +46,7 @@ testpaths = [
 addopts = '-p no:sugar'
 filterwarnings = [
     'ignore:ast.* is deprecated.*:DeprecationWarning',
+    'ignore:Attribute s is deprecated and will be removed in Python 3.14.*',
 ]
 
 [build-system]
