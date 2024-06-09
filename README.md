@@ -13,10 +13,13 @@ poetry install --with=dev
 ## Verify installation
 
 - Run dummy tests using command
+
 ```
 poetry run pytest
 ```
-This should open Firefox and Chrome, then you should see output similar to
+
+This should open Firefox and Chrome, run a very quick test on each and finally you should see output similar to:
+
 ```shell
 ============================================= test session starts ==============================================
 platform darwin -- Python 3.12.1, pytest-7.2.2, pluggy-1.5.0
