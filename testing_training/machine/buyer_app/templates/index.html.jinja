@@ -1,0 +1,378 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Vending Machine Buyer App</title>
+    <link rel="stylesheet" href="/static/bulma.min.css">
+    <link rel="stylesheet" href="/static/fontawesome/css/all.css">
+    <script type="application/javascript" src="/static/vue.js"></script>
+    <script type="application/javascript" src="/static/vue-router.global.js"></script>
+    <script type= "application/javascript" src="/static/vuex.js"></script>
+    <script type= "application/javascript" src="/static/axios.min.js"></script>
+</head>
+{% raw %}
+<body>
+<div class="container">
+    <div id="app"></div>
+</div>
+<script>
+const Loading = Vue.defineComponent({
+    template: `
+        <div class="loading">Loading...</div>
+    `
+})
+const ProductsList = Vue.defineComponent({
+    template: `
+        <div class="fixed-grid has-2-cols has-1-cols-mobile">
+          <div class="grid">
+            <div class="cell" v-for="product in $store.state.products">
+                <div class="card">
+                  <div class="card-image">
+                    <button class="image" @click="seeProduct(product.id)">
+                      <img
+                        :src="'data:image/webp;base64,' + product.image" width="200" height="200"
+                        alt="{{ product.name }}"
+                      />
+                    </button>
+                  </div>
+                  <div class="card-content">
+                    <div class="media">
+                      <div class="media-content">
+                        <p class="title is-4">{{ product.name }} <span class="tag is-danger" v-if="$store.getters.quantity(product.id) == 0">Out Of Stock</span></p>
+                        <p class="subtitle is-6">{{ product.price.amount }} {{ product.price.currency }}</p>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+            </div>
+          </div>
+        </div>
+    `,
+    methods: {
+        seeProduct(productId) {
+            router.push(`/products/${productId}`)
+        }
+    }
+})
+
+const SingleProductView = Vue.defineComponent({
+    data() {
+        const productId = parseInt(this.$route.params.productId)
+        return {
+            product: store.getters.productById(productId)
+        }
+    },
+    methods: {
+        async addToCart(productId) {
+            const result = await store.dispatch('addToCart', productId)
+            console.log(result)
+        }
+    },
+    template: `
+        <div class="card">
+          <div class="card-image">
+            <figure class="image is-128x128">
+              <img
+                :src="'data:image/webp;base64,' + product.image"
+                alt="{{ product.name }}"
+              />
+            </figure>
+          </div>
+          <div class="card-content">
+            <div class="media">
+              <div class="media-content">
+                <p class="title is-4">{{ product.name }} <span class="tag is-danger" v-if="$store.getters.quantity(product.id) == 0">Out Of Stock</span></p>
+                <p class="subtitle is-6">{{ product.price.amount }} {{ product.price.currency }}</p>
+              </div>
+            </div>
+
+            <div class="content">
+              {{ product.description }}
+              <br />
+              <p>In stock: {{ $store.getters.quantity(product.id) }}</p>
+              <button class="button" @click="addToCart(product.id)" :disabled="$store.getters.quantity(product.id) == 0"><i class="fa-solid fa-cart-arrow-down"></i>&nbsp;&nbsp;Add to cart</button>
+              &nbsp;&nbsp;<RouterLink v-if="!$store.getters.isCartEmpty" class="button" to="/cart">Go to cart</RouterLink>
+            </div>
+          </div>
+        </div>
+    `
+})
+
+const Cart = Vue.defineComponent({
+    data() {
+        const lines = []
+        let totalInSmallestUnit = 0
+        for (const [productId, quantity] of Object.entries(store.state.cart.items)) {
+            const product = store.getters.productById(parseInt(productId))
+            const priceInSmallestUnit = parseInt(product.price.amount.replace(".", ""))
+            const subtotal = (priceInSmallestUnit * quantity) / 100
+            totalInSmallestUnit += priceInSmallestUnit * quantity
+            lines.push({
+                product,
+                quantity,
+                subtotal: subtotal
+            })
+        }
+        return {
+            lines,
+            total: totalInSmallestUnit / 100
+        }
+    },
+    template: `
+        <div>
+          <div v-if="$store.getters.isCartEmpty">
+            <p>Your cart is empty</p>
+          </div>
+          <div v-else>
+            <table class="table">
+                <thead>
+                    <tr>
+                        <th></th>
+                        <th>Product</th>
+                        <th>Unit Price</th>
+                        <th>Quantity</th>
+                        <th>Subtotal</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr v-for="line in lines">
+                        <td><img class="image is-64x64" :src="'data:image/webp;base64,' + line.product.image"></td>
+                        <td>{{ line.product.name }}</td>
+                        <td>{{ line.product.price.amount }} {{ line.product.price.currency }}</td>
+                        <td>{{ line.quantity }}</td>
+                        <td>{{ line.subtotal }} {{ line.product.price.currency }}</td>
+                    </tr>
+                </tbody>
+                <tfoot>
+                    <tr>
+                        <td colspan="4">Total</td>
+                        <td>{{ total }} PLN</td>
+                    </tr>
+                </tfoot>
+            </table>
+            <div class="buttons">
+                <button class="button is-primary" @click="purchase">Purchase</button>
+                <RouterLink class="button is-warning" to="/products">Continue shopping</RouterLink>
+                <button class="button is-danger" @click="emptyCart">Empty cart</button>
+            </div>
+          </div>
+        </div>
+        `,
+        methods: {
+            purchase() {
+                this.$store.dispatch('purchase')
+            },
+            emptyCart() {
+                store.commit('emptyCart')
+                this.$router.push('/products')
+            }
+        }
+    })
+
+
+const Checkout = Vue.defineComponent({
+    template: `
+        <div>
+            <article class="message">
+              <div class="message-header">
+                <p>{{ $store.getters.titleForPendingOrder }}</p>
+              </div>
+              <div class="message-body">
+                {{ $store.getters.messageForPendingOrder }}
+              </div>
+            </article>
+        </div>
+    `
+})
+
+const router = VueRouter.createRouter({
+    history: VueRouter.createWebHashHistory(),
+    routes: [
+      { path: '/', component: Loading },
+      { path: '/products', component: ProductsList },
+      { path: '/products/:productId', component: SingleProductView },
+      { path: '/cart', component: Cart },
+      { path: '/checkout', component: Checkout },
+    ]
+})
+
+const store = Vuex.createStore({
+    state() {
+        return {
+            products: [],
+            inventory: {},
+            cart: {
+                items: {},
+                totalPrice: 0,
+                totalCount: 0
+            },
+            order: null,
+            fetchOrderInterval: null
+        }
+    },
+    getters: {
+        quantity: state => id => {
+            return state.inventory[id]
+        },
+        productById: state => id => {
+            return state.products.find((product) => product.id === id)
+        },
+        isCartEmpty: state => {
+            return state.cart.totalCount === 0
+        },
+        titleForPendingOrder: state => {
+            if (!state.order) {
+                return "No pending order"
+            } else {
+                const statusToTitle = {
+                    "AWAITING_PAYMENT": `Use your card to pay ${state.order.total.amount} ${state.order.total.currency}`,
+                    "DISPENSING": "Dispensing product(s)...",
+                    "DONE": "All good!",
+                    "PAYMENT_TIMEOUT": "Failed to pay in time, machine will reset in a few seconds...",
+                    "DISPENSING_ERROR": "There was an error during dispensing, please contact support"
+                }
+                return statusToTitle[state.order.status]
+            }
+       },
+        messageForPendingOrder: state => {
+            if (!state.order) {
+                return "No pending order"
+            } else {
+                const messageToTitle = {
+                    "AWAITING_PAYMENT": `Your total is ${state.order.total.amount} ${state.order.total.currency}. Use your card by swiping it by the terminal or use contactless payment.`,
+                    "DISPENSING": "We've got your payment, dispensing your product(s) now...",
+                    "DONE": "Have a nice day!",
+                    "PAYMENT_TIMEOUT": "Your order has been cancelled, please try again if you still want to buy the product(s).",
+                    "DISPENSING_ERROR": "It seems there was an issue with the machine. We've notified our support team. Please try again later."
+                }
+                return messageToTitle[state.order.status]
+            }
+        }
+    },
+    mutations: {
+        setInventory(state, inventory) {
+            state.inventory = inventory
+        },
+        setProducts(state, products) {
+            state.products = products
+        },
+        emptyCart(state) {
+            state.cart = {
+                items: {},
+                totalPrice: 0,
+                totalCount: 0
+            }
+        },
+        addToCart(state, {product, newCount}) {
+            state.cart.items = {
+                ...state.cart.items,
+                [product.id]: newCount
+            }
+            state.cart.totalCount += 1
+            const priceInSmallestUnit = parseInt(product.price.amount.replace('.', ''))
+            store.state.cart.totalPrice += priceInSmallestUnit
+        },
+        setOrder(state, order) {
+            state.order = order
+        },
+        setFetchOrderInterval(state, interval) {
+            state.fetchOrderInterval = interval
+        },
+        unsetOrder(state) {
+            state.order = null
+            clearInterval(state.fetchOrderInterval)
+            state.fetchOrderInterval = null
+        }
+    },
+    actions: {
+        async loadData(context) {
+            const products_response = await axios.get("/products")
+            context.commit('setProducts', products_response.data)
+            const inventory_response = await axios.get("/inventory")
+            context.commit('setInventory', inventory_response.data)
+            router.push('/products')
+        },
+        addToCart({commit, state}, productId) {
+            const product = state.products.find((product) => product.id === productId)
+            const currentCount = state.cart.items[product.id] || 0
+            const newCount = currentCount + 1
+            const inStock = state.inventory[productId] >= newCount
+
+            if (!inStock) {
+                console.log("Tyle to nie ma")
+                return false
+            }
+            commit('addToCart', {product, newCount})
+            return true
+        },
+        async purchase({commit, state}) {
+            const response = await axios.post("/order", {
+                items: state.cart.items
+            })
+            if (response.status !== 200) {
+                alert("Something went wrong")
+                return
+            }
+            commit('emptyCart')
+            commit('setOrder', response.data)
+            const interval = setInterval(async () => {
+                const response = await axios.get(`/order/${state.order.order_id}`)
+                if (response.status === 200) {
+                    commit('setOrder', response.data)
+                    const ending_statuses = ["DONE", "PAYMENT_TIMEOUT", "DISPENSING_ERROR"]
+                    if (ending_statuses.includes(response.data.status)) {
+                        setTimeout(() => {
+                            router.go('/products')
+                            commit('unsetOrder')
+                        }, 5000)
+                    }
+                }
+            }, 1000)
+            commit('setFetchOrderInterval', interval)
+            router.push('/checkout')
+        }
+    }
+})
+
+const app = Vue.createApp({
+    mounted() {
+        this.$store.dispatch('loadData')
+    },
+    template: `
+        <nav class="navbar" role="navigation" aria-label="main navigation">
+          <div id="navbarBasicExample" class="navbar-menu">
+            <div class="navbar-start">
+              <RouterLink class="navbar-item" to="/products">All products</RouterLink>
+            </div>
+            <div class="navbar-end">
+                <div class="navbar-item">
+                    <p v-if="$store.getters.isCartEmpty">
+                        <span class="icon">
+                          <i class="fa-solid fa-cart-shopping"></i>
+                        </span>
+                        Your cart is empty
+                    </p>
+                    <p v-else>
+                        <span class="icon">
+                          <i class="fas fa-shopping-cart"></i>
+                        </span>
+                        {{ $store.state.cart.totalCount }} item(s) worth {{ ($store.state.cart.totalPrice / 100).toFixed(2) }} PLN in your cart
+                    </p>
+                </div>
+                <RouterLink class="navbar-item" to="/cart">Go to cart</RouterLink>
+            </div>
+          </div>
+        </nav>
+        <router-view></router-view>
+    `,
+})
+
+app.use(router)
+app.use(store)
+
+app.mount('#app')
+</script>
+</body>
+{% endraw %}
+</html>
