@@ -1,5 +1,6 @@
 import time
 import base64
+from concurrent.futures import ThreadPoolExecutor
 from contextlib import asynccontextmanager
 from datetime import timedelta
 from pathlib import Path
@@ -19,6 +20,9 @@ from testing_training.machine.inventory import get_inventory
 from testing_training.machine.products import list_products
 
 
+threadpool = ThreadPoolExecutor(max_workers=4)
+
+
 @asynccontextmanager
 async def lifespan(_: FastAPI) -> Iterator[None]:
     def _timeout_payments(event: Event) -> None:
@@ -30,15 +34,16 @@ async def lifespan(_: FastAPI) -> Iterator[None]:
 
             time.sleep(1)
             with Session() as session:
-                vending = Vending(session)
+                vending = Vending(session=session, threadpool=threadpool)
                 vending.timeout_orders(timeout=TIMEOUT)
                 session.commit()
 
     stop_event = Event()
-    thread = Thread(target=_timeout_payments, args=(stop_event, ), daemon=True)
+    thread = Thread(target=_timeout_payments, args=(stop_event,), daemon=True)
     thread.start()
     yield
     stop_event.set()
+    threadpool.shutdown(wait=True)
 
 
 app = FastAPI(lifespan=lifespan)
@@ -90,9 +95,8 @@ class OrderPayload(BaseModel):
 @app.post("/order")
 def order(payload: OrderPayload) -> JSONResponse:
     session = Session()
-    vending = Vending(session)
+    vending = Vending(session=session, threadpool=threadpool)
     order = vending.place_order(payload.items)
-    session.flush()
     response = _order_to_dict(order)
     session.commit()
     return JSONResponse(content=response)
@@ -101,27 +105,21 @@ def order(payload: OrderPayload) -> JSONResponse:
 @app.get("/order/{order_id}")
 def get_order(order_id: str) -> JSONResponse:
     session = Session()
-    vending = Vending(session)
+    vending = Vending(session=session, threadpool=threadpool)
     order = vending.get_order(int(order_id))
     if order is None:
         return JSONResponse(content={"error": "Order not found"}, status_code=404)
     response = _order_to_dict(order)
     return JSONResponse(content=response)
 
-    # Co dalej?
-    # niech wygeneruje order id i spróbuje się dobić do terminala płatniczego
-    #    zapisać ten order w bazie of coz
-    # inicjuje płatność
-    #   czeka na webhooka z terminala płatniczego ze sie udalo
-    # wystawia endpoint z order id ktory frontend bedzie odpytywal o status
-    #       (moze byc tez websocket, ale az tak to mi sie nie chce :D)
-    # niech bedzie tutaj obsluga timeoutow itp EXTRA
-    #       task w tle niech chodzi sobie w tym serwisie i sprawdza czy sie ktorys order nie przeterminowal
-    # jak sie uda zaplacic to dispense - tutaj inicjowane, a raczej w odpowiedzi na webhooka
 
-    # Potrzebne jest cos co zasymuluje przylozenie karty do terminala platniczego (endpoint w terminal app)
-
-    # Co z wrzutnikiem monet? a moze chuj, bo zrobimy sobie protezę mdb na silnikach (Wydawanie)
+@app.post("/order/{order_id}/dispense_completed")
+def dispense_completed(order_id: int) -> JSONResponse:
+    session = Session()
+    vending = Vending(session=session, threadpool=threadpool)
+    vending.dispense_completed(order_id)
+    session.commit()
+    return JSONResponse(content={"success": True})
 
 
 class PaymentNotification(BaseModel):
@@ -132,9 +130,10 @@ class PaymentNotification(BaseModel):
 @app.post("/payment/notifications")
 def handle_payment_notification(payload: PaymentNotification) -> JSONResponse:
     session = Session()
-    vending = Vending(session)
+    vending = Vending(session=session, threadpool=threadpool)
     vending.payment_successful(payload.order_id)
     session.commit()
+    return JSONResponse(content={"success": True})
 
 
 def _order_to_dict(order: Order) -> dict:

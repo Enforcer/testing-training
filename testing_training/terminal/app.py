@@ -1,6 +1,5 @@
 import logging
 import asyncio
-from datetime import timedelta
 from typing import Literal
 
 import httpx
@@ -24,7 +23,6 @@ class Order(BaseModel):
 
 class TechnicalInfo(BaseModel):
     notification_url: HttpUrl
-    timeout: timedelta
 
 
 class Payload(BaseModel):

@@ -35,7 +35,6 @@ def test_sends_notification_for_successful_order_for_given_url(
                 },
                 "technical_info": {
                     "notification_url": "http://callback_hostname/v1/terminal_notifications",
-                    "timeout": 60,
                 },
             },
         )
@@ -64,7 +63,6 @@ def test_logs_problem_if_request_with_notification_failed(
                 },
                 "technical_info": {
                     "notification_url": "http://callback_hostname/v1/terminal_notifications",
-                    "timeout": 60,
                 },
             },
         )

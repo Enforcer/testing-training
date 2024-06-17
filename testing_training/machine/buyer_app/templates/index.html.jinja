@@ -281,6 +281,8 @@ const store = Vuex.createStore({
         },
         unsetOrder(state) {
             state.order = null
+        },
+        clearFetchOrderInterval(state) {
             clearInterval(state.fetchOrderInterval)
             state.fetchOrderInterval = null
         }
@@ -322,8 +324,13 @@ const store = Vuex.createStore({
                     commit('setOrder', response.data)
                     const ending_statuses = ["DONE", "PAYMENT_TIMEOUT", "DISPENSING_ERROR"]
                     if (ending_statuses.includes(response.data.status)) {
-                        setTimeout(() => {
-                            router.go('/products')
+                        commit('clearFetchOrderInterval')
+                        setTimeout(async () => {
+                            const products_response = await axios.get("/products")
+                            commit('setProducts', products_response.data)
+                            const inventory_response = await axios.get("/inventory")
+                            commit('setInventory', inventory_response.data)
+                            router.push('/products')
                             commit('unsetOrder')
                         }, 5000)
                     }

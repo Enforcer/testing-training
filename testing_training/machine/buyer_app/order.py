@@ -14,7 +14,15 @@ class Order(MappedAsDataclass, Base, unsafe_hash=True):
 
     id: Mapped[int] = mapped_column(init=False, primary_key=True)
     created_at: Mapped[datetime] = mapped_column()
-    status: Mapped[Literal["AWAITING_PAYMENT", "DISPENSING", "DONE", "PAYMENT_TIMEOUT", "DISPENSING_ERROR"]]
+    status: Mapped[
+        Literal[
+            "AWAITING_PAYMENT",
+            "DISPENSING",
+            "DONE",
+            "PAYMENT_TIMEOUT",
+            "DISPENSING_ERROR",
+        ]
+    ]
     _amount: Mapped[Decimal] = mapped_column(init=False)
     _currency: Mapped[str] = mapped_column(init=False)
     total: Mapped[Money] = composite("_amount", "_currency")

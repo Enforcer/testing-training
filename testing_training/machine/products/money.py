@@ -45,7 +45,9 @@ class Money:
 
     def __mul__(self, other: object) -> Self:
         if not isinstance(other, int):
-            raise TypeError(f"can't multiply {type(self).__name__} by non-int of type '{type(other).__name__}'")
+            raise TypeError(
+                f"can't multiply {type(self).__name__} by non-int of type '{type(other).__name__}'"
+            )
         return type(self)(self.amount * other, self.currency)
 
     def __add__(self, other: object) -> Self:
@@ -53,11 +55,15 @@ class Money:
             case Money(amount=amount, currency=self.currency):
                 return type(self)(self.amount + amount, self.currency)
             case Money(currency=_):
-                raise ValueError(f"cannot add {self} to {other} because of different currency")
+                raise ValueError(
+                    f"cannot add {self} to {other} because of different currency"
+                )
             case 0:
                 return self
             case _:
-                raise TypeError(f"unsupported operand type(s) for +: '{type(self).__name__}' and '{type(other).__name__}'")
+                raise TypeError(
+                    f"unsupported operand type(s) for +: '{type(self).__name__}' and '{type(other).__name__}'"
+                )
 
     def __radd__(self, other: object) -> Self:
         return self.__add__(other)

@@ -45,10 +45,18 @@ def main() -> None:
 
         products = list_products()
 
-        water = next(product for product in products if product.name == "Pure Still Water")
-        isotonic = next(product for product in products if product.name == "nErgize Isotonic Drink")
-        protein_bar = next(product for product in products if product.name == "Pow3r Protein Bar")
-        peanuts = next(product for product in products if product.name == "Crunchy Peantus")
+        water = next(
+            product for product in products if product.name == "Pure Still Water"
+        )
+        isotonic = next(
+            product for product in products if product.name == "nErgize Isotonic Drink"
+        )
+        protein_bar = next(
+            product for product in products if product.name == "Pow3r Protein Bar"
+        )
+        peanuts = next(
+            product for product in products if product.name == "Crunchy Peantus"
+        )
 
         for row, column in zip([1] * 4, [1, 2, 3, 4]):
             stock = Stock(product_id=water.id, quantity=4)
