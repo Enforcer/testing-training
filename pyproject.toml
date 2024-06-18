@@ -40,8 +40,19 @@ tavern = "*"
 pytest-randomly = "*"
 
 [tool.pytest.ini_options]
+minversion = "7.0"
 testpaths = [
-  "tests",
+  "testing_training/tests",
+]
+python_files = [
+    "test_*.py",
+    "*_test.py",
+]
+python_functions = [
+    "test_*",
+]
+python_classes = [
+    "Test*",
 ]
 addopts = '-p no:sugar'
 filterwarnings = [

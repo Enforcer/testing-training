@@ -5,6 +5,7 @@ from typing import Self
 
 class Currency(StrEnum):
     PLN = "PLN"
+    USD = "USD"
 
 
 class Money:
