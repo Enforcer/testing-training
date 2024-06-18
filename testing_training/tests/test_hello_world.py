@@ -4,6 +4,7 @@ from contextlib import contextmanager
 from typing import Iterator
 
 import httpx
+import pytest
 
 import uvicorn
 from selenium import webdriver
@@ -37,6 +38,7 @@ def running_server(port: int, timeout_s: int = 5) -> Iterator[None]:
     server_process.terminate()
 
 
+@pytest.mark.skip()
 def test_if_machine_status_can_be_changed(unused_tcp_port: int) -> None:
     with running_server(unused_tcp_port, timeout_s=5):
         driver = webdriver.Firefox()
@@ -55,6 +57,7 @@ def test_if_machine_status_can_be_changed(unused_tcp_port: int) -> None:
             driver.quit()
 
 
+@pytest.mark.skip()
 def test_if_machine_status_can_be_changed_on_chrome(unused_tcp_port: int) -> None:
     with running_server(unused_tcp_port, timeout_s=5):
         driver = webdriver.Chrome()

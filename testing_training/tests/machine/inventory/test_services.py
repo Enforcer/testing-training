@@ -13,6 +13,7 @@ def test_returns_sum_of_quantities_per_product(tmp_path_factory) -> None:
     sqlite_file = tmp_path_factory.mktemp("db") / "test.db"
     engine = create_engine(f"sqlite:///{sqlite_file}")
     Base.metadata.create_all(engine)
+    Session.remove()
     Session.configure(bind=engine)
 
     session = Session()

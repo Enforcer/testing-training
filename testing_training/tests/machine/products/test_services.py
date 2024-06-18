@@ -13,6 +13,7 @@ def test_added_product_is_returned(tmp_path_factory) -> None:
     sqlite_file = tmp_path_factory.mktemp("db") / "test.db"
     engine = create_engine(f"sqlite:///{sqlite_file}")
     Base.metadata.create_all(engine)
+    Session.remove()
     Session.configure(bind=engine)
 
     add_product(
@@ -36,6 +37,7 @@ def test_cannot_add_two_products_with_the_same_name(tmp_path_factory) -> None:
     sqlite_file = tmp_path_factory.mktemp("db") / "test.db"
     engine = create_engine(f"sqlite:///{sqlite_file}")
     Base.metadata.create_all(engine)
+    Session.remove()
     Session.configure(bind=engine)
 
     add_product(
