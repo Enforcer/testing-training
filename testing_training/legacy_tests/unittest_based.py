@@ -1,4 +1,3 @@
-
 import unittest
 
 from testing_training.machine.products.money import Money, Currency

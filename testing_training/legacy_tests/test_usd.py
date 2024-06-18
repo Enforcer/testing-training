@@ -6,4 +6,4 @@ def test_usd():
 
     assert isinstance(money, Money)
     assert money.amount == 10
-    assert money.currency == 'USD'
+    assert money.currency == "USD"

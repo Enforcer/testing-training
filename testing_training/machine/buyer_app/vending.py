@@ -111,7 +111,9 @@ class Vending:
 
         self._session.commit()
 
-        response = httpx.post(f"http://localhost:8000/order/{order_id}/dispense_completed")
+        response = httpx.post(
+            f"http://localhost:8000/order/{order_id}/dispense_completed"
+        )
         response.raise_for_status()
 
 
@@ -133,4 +135,3 @@ def wake_up_terminal_and_start_payment(order_id: int, total: Money) -> None:
     client = httpx.Client(base_url="http://localhost:8090", transport=transport)
     response = client.post("/v1/order", json=payload)
     response.raise_for_status()
-
