@@ -1,9 +1,13 @@
+import time
+import logging
 from concurrent.futures import ThreadPoolExecutor
 from datetime import datetime, timedelta
+from typing import cast
 
 import httpx
 from sqlalchemy import select
 from sqlalchemy.orm import Session
+from testing_training.machine.database import Session as MachineSession
 
 from testing_training.machine.products import list_products, Money
 from testing_training.machine.inventory import (
@@ -14,10 +18,13 @@ from testing_training.machine.buyer_app.order import Order
 from testing_training.myserial import Serial, ACK, NACK
 
 
+logger = logging.getLogger(__name__)
+
+
 class Vending:
-    def __init__(self, session: Session, threadpool: ThreadPoolExecutor) -> None:
+    def __init__(self, session: Session) -> None:
         self._session = session
-        self._threadpool = threadpool
+        self._threadpool = ThreadPoolExecutor(max_workers=4)
 
     def place_order(self, items: dict[int, int]) -> Order:
         all_products = list_products()
@@ -27,6 +34,7 @@ class Vending:
             product_by_id[product_id].price * quantity
             for product_id, quantity in items.items()
         )
+        total = cast(Money, total)
 
         order = Order(
             created_at=datetime.now(),
@@ -37,9 +45,29 @@ class Vending:
         self._session.add(order)
         self._session.flush()
 
-        self._threadpool.submit(
-            wake_up_terminal_and_start_payment, order_id=order.id, total=total
-        )
+        order_id = order.id
+        try:
+            wake_up_terminal_and_start_payment(order_id=order_id, total=total)
+        except httpx.HTTPError:
+            order.status = "PAYMENT_FAILED"
+        else:
+            def poll_for_success(order_id: int) -> None:
+                start = time.monotonic()
+                while time.monotonic() - start < 5:
+                    time.sleep(0.25)
+                    response = httpx.get(f"http://localhost:8090/v1/order/{order_id}")
+                    if response.json()["status"] != "DONE":
+                        continue
+
+                    with MachineSession() as session:
+                        vending = Vending(session=session)
+                        vending.payment_successful(order_id)
+                        session.commit()
+
+                    return
+
+            self._threadpool.submit(poll_for_success, order_id)
+
         return order
 
     def get_order(self, order_id: int) -> Order | None:
@@ -86,8 +114,8 @@ class Vending:
                     serial.open()
                     engine_controller_address = 0x02
                     drive_command = 0x13
-                    engine_no = hex(engine_row * 10 + engine_column)
-                    steps = hex(1)
+                    engine_no = engine_row * 10 + engine_column
+                    steps = 0x1
                     frame = [engine_controller_address, drive_command, engine_no, steps]
                     frame_with_checksum = frame + [sum(frame) & 0xFF]
                     payload = bytes(frame_with_checksum)
@@ -98,6 +126,7 @@ class Vending:
                     elif response == NACK:
                         raise Exception("Dispensing error")
         except Exception:
+            logger.exception("Dispensing error!")
             order.status = "DISPENSING_ERROR"
         else:
             stmt = (

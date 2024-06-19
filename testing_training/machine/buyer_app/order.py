@@ -20,6 +20,7 @@ class Order(MappedAsDataclass, Base, unsafe_hash=True):
             "DISPENSING",
             "DONE",
             "PAYMENT_TIMEOUT",
+            "PAYMENT_FAILED",
             "DISPENSING_ERROR",
         ]
     ]

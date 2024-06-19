@@ -19,10 +19,10 @@ def restore_engine_state() -> None:
 
 
 def simulate_terminal_malfunction() -> None:
-    response = httpx.post("http://localhost:8090/_fail_mode?fail_mode=true")
+    response = httpx.post("http://localhost:8090/_fail_mode")
     response.raise_for_status()
 
 
 def restore_terminal() -> None:
-    response = httpx.post("http://localhost:8090/_fail_mode?fail_mode=false")
+    response = httpx.delete("http://localhost:8090/_fail_mode")
     response.raise_for_status()

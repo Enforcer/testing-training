@@ -1,6 +1,5 @@
 import time
 import base64
-from concurrent.futures import ThreadPoolExecutor
 from contextlib import asynccontextmanager
 from datetime import timedelta
 from pathlib import Path
@@ -20,9 +19,6 @@ from testing_training.machine.inventory import get_inventory
 from testing_training.machine.products import list_products
 
 
-threadpool = ThreadPoolExecutor(max_workers=4)
-
-
 @asynccontextmanager
 async def lifespan(_: FastAPI) -> Iterator[None]:
     def _timeout_payments(event: Event) -> None:
@@ -34,7 +30,7 @@ async def lifespan(_: FastAPI) -> Iterator[None]:
 
             time.sleep(1)
             with Session() as session:
-                vending = Vending(session=session, threadpool=threadpool)
+                vending = Vending(session=session)
                 vending.timeout_orders(timeout=TIMEOUT)
                 session.commit()
 
@@ -43,7 +39,6 @@ async def lifespan(_: FastAPI) -> Iterator[None]:
     thread.start()
     yield
     stop_event.set()
-    threadpool.shutdown(wait=True)
 
 
 app = FastAPI(lifespan=lifespan)
@@ -95,7 +90,7 @@ class OrderPayload(BaseModel):
 @app.post("/order")
 def order(payload: OrderPayload) -> JSONResponse:
     session = Session()
-    vending = Vending(session=session, threadpool=threadpool)
+    vending = Vending(session=session)
     order = vending.place_order(payload.items)
     response = _order_to_dict(order)
     session.commit()
@@ -105,7 +100,7 @@ def order(payload: OrderPayload) -> JSONResponse:
 @app.get("/order/{order_id}")
 def get_order(order_id: str) -> JSONResponse:
     session = Session()
-    vending = Vending(session=session, threadpool=threadpool)
+    vending = Vending(session=session)
     order = vending.get_order(int(order_id))
     if order is None:
         return JSONResponse(content={"error": "Order not found"}, status_code=404)
@@ -121,7 +116,7 @@ class PaymentNotification(BaseModel):
 @app.post("/payment/notifications")
 def handle_payment_notification(payload: PaymentNotification) -> JSONResponse:
     session = Session()
-    vending = Vending(session=session, threadpool=threadpool)
+    vending = Vending(session=session)
     vending.payment_successful(payload.order_id)
     session.commit()
     return JSONResponse(content={"success": True})
