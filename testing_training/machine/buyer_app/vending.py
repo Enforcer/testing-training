@@ -1,4 +1,3 @@
-import os
 from concurrent.futures import ThreadPoolExecutor
 from datetime import datetime, timedelta
 
@@ -12,6 +11,7 @@ from testing_training.machine.inventory import (
     lower_stock_on_engine,
 )
 from testing_training.machine.buyer_app.order import Order
+from testing_training.myserial import Serial, ACK, NACK
 
 
 class Vending:
@@ -60,18 +60,6 @@ class Vending:
         for order in orders:
             order.status = "PAYMENT_TIMEOUT"
 
-    def dispense_completed(self, order_id: int) -> None:
-        stmt = (
-            select(Order)
-            .filter(
-                Order.id == order_id,
-            )
-            .with_for_update()
-        )
-
-        order = self._session.execute(stmt).scalars().first()
-        order.status = "DONE"
-
     def payment_successful(self, order_id: int) -> None:
         stmt = (
             select(Order)
@@ -94,7 +82,8 @@ class Vending:
                     print(
                         f"Dispensing {quantity} of product {product_id} from engine {engine_row}, {engine_column}"
                     )
-                    fd = os.open(os.devnull, os.O_RDWR)
+                    serial = Serial("/dev/ttyUSB0", timeout=1)
+                    serial.open()
                     engine_controller_address = 0x02
                     drive_command = 0x13
                     engine_no = hex(engine_row * 10 + engine_column)
@@ -102,19 +91,27 @@ class Vending:
                     frame = [engine_controller_address, drive_command, engine_no, steps]
                     frame_with_checksum = frame + [sum(frame) & 0xFF]
                     payload = bytes(frame_with_checksum)
-                    os.write(fd, payload)
-                    _response = os.read(fd, 1)
-                    os.close(fd)
-                    lower_stock_on_engine(engine_row, engine_column)
+                    serial.write(payload)
+                    response = serial.read(length=2)
+                    if response == ACK:
+                        lower_stock_on_engine(engine_row, engine_column)
+                    elif response == NACK:
+                        raise Exception("Dispensing error")
         except Exception:
             order.status = "DISPENSING_ERROR"
+        else:
+            stmt = (
+                select(Order)
+                .filter(
+                    Order.id == order_id,
+                )
+                .with_for_update()
+            )
+
+            order = self._session.execute(stmt).scalars().first()
+            order.status = "DONE"
 
         self._session.commit()
-
-        response = httpx.post(
-            f"http://localhost:8000/order/{order_id}/dispense_completed"
-        )
-        response.raise_for_status()
 
 
 def wake_up_terminal_and_start_payment(order_id: int, total: Money) -> None:

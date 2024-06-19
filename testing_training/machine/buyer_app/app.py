@@ -113,15 +113,6 @@ def get_order(order_id: str) -> JSONResponse:
     return JSONResponse(content=response)
 
 
-@app.post("/order/{order_id}/dispense_completed")
-def dispense_completed(order_id: int) -> JSONResponse:
-    session = Session()
-    vending = Vending(session=session, threadpool=threadpool)
-    vending.dispense_completed(order_id)
-    session.commit()
-    return JSONResponse(content={"success": True})
-
-
 class PaymentNotification(BaseModel):
     order_id: int
     status: str
