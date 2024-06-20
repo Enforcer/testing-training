@@ -17,10 +17,13 @@ class Money:
         else:
             amount = Decimal(amount)
 
-        quantized = amount.quantize(Decimal("0.01"))
-        if amount != quantized:
+        decimal_tuple = amount.as_tuple()
+        if decimal_tuple.sign:
+            raise ValueError("Amount has to be positive")
+        elif -decimal_tuple.exponent > 2:
             raise ValueError("Amount has to have at most two decimal places")
-        self._amount = quantized
+
+        self._amount = amount
 
     @property
     def amount(self) -> Decimal:
