@@ -21,7 +21,7 @@ def test_calculate_commission_loses_no_money() -> None:
         sell_commission=Decimal("0.2"),
     )
 
-    value_without_commission = Money(round(price.amount * amount, 2), Currency.USD)
+    value_without_commission = Money(price.amount * amount, Currency.USD)
     commission = Money(0, Currency.USD)
     total_money_before = value_without_commission + commission
     total_money_after = result.payout + result.commission_for_platform
