@@ -11,14 +11,22 @@ from testing_training.machine.products.money import Currency
 # https://hypothesis.readthedocs.io/en/latest/data.html#hypothesis.strategies.decimals
 
 
-def test_calculate_commission_loses_no_money() -> None:
-    price = Money("100", Currency.USD)
-    amount = 1
+@given(
+    strategies.decimals(
+        min_value=Decimal("0.01"), places=2, allow_nan=False, allow_infinity=False
+    ),
+    strategies.integers(min_value=1),
+    strategies.decimals(
+        min_value=0, max_value=Decimal("0.99"), allow_nan=False, allow_infinity=False
+    ),
+)
+def test_calculate_commission_loses_no_money(price_amount, amount, commission) -> None:
+    price = Money(price_amount, Currency.USD)
 
     result = calculate_commission(
         price=price,
         amount=amount,
-        sell_commission=Decimal("0.2"),
+        sell_commission=commission,
     )
 
     value_without_commission = Money(price.amount * amount, Currency.USD)
