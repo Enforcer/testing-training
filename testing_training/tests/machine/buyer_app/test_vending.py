@@ -21,10 +21,10 @@ def test_order_succeeds() -> None:
     tools.restore_terminal()
 
     sqlite_file = Path(__file__).parent / "test_db.db"
-    sqlite_file.unlink(missing_ok=True)
-    engine = create_engine(f"sqlite:///{sqlite_file}")
-    Base.metadata.create_all(engine)
     Session.remove()
+    engine = create_engine(f"sqlite:///{sqlite_file}")
+    Base.metadata.drop_all(engine)
+    Base.metadata.create_all(engine)
     Session.configure(bind=engine)
 
     add_product(
@@ -63,10 +63,10 @@ def test_order_fails_when_payment_terminal_malfunctions() -> None:
     tools.restore_terminal()
 
     sqlite_file = Path(__file__).parent / "test_db.db"
-    sqlite_file.unlink(missing_ok=True)
-    engine = create_engine(f"sqlite:///{sqlite_file}")
-    Base.metadata.create_all(engine)
     Session.remove()
+    engine = create_engine(f"sqlite:///{sqlite_file}")
+    Base.metadata.drop_all(engine)
+    Base.metadata.create_all(engine)
     Session.configure(bind=engine)
 
     tools.simulate_terminal_malfunction()
