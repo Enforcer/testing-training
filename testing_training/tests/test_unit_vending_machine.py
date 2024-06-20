@@ -126,3 +126,27 @@ def test_buying_not_existing_items() -> None:
 
     assert isinstance(result, OneOrMoreOfItemUnavailable)
     assert result.missing_item_names == ["Dress", "Shoes"]
+
+
+def test_buying_existing_item_lowers_stock_by_one() -> None:
+    socks = Item(name="Socks", price=9)
+    socks_stock = Stocks(id=1, item=socks, quantity=10, engine_id="1")
+    machine = UnitVendingMachine(stocks=[socks_stock])
+    initial_quantity = machine.get_items_count("Socks")
+
+    _result = machine.buy("Socks")
+
+    assert machine.get_items_count("Socks") == initial_quantity - 1
+
+
+def test_buying_multiple_items_sums_price() -> None:
+    socks = Item(name="Socks", price=9)
+    shirts = Item(name="Shirt", price=12)
+    socks_stock = Stocks(id=1, item=socks, quantity=10, engine_id="1")
+    shirt_stock = Stocks(id=2, item=shirts, quantity=10, engine_id="2")
+    machine = UnitVendingMachine(stocks=[socks_stock, shirt_stock])
+
+    result = machine.buy_many(["Socks", "Shirt"])
+
+    assert isinstance(result, ItemsSold)
+    assert result.price == 21
