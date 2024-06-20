@@ -47,7 +47,12 @@ def calculate_commission(
     amount: int,
     sell_commission: Decimal,
 ) -> Result:
-    payout = round(price.amount * amount, 2)
-    actual_payout = Money((Decimal(1) - sell_commission) * payout, Currency.USD)
-    commission = Money(payout * sell_commission, Currency.USD)
+    payout = price.amount * amount
+    actual_payout_amount = (Decimal(1) - sell_commission) * payout
+    needs_rounding = actual_payout_amount.as_tuple().exponent < -2
+    if needs_rounding:
+        actual_payout_amount = round(actual_payout_amount, 2)
+
+    actual_payout = Money(actual_payout_amount, Currency.USD)
+    commission = Money(payout - actual_payout.amount, Currency.USD)
     return Result(payout=actual_payout, commission_for_platform=commission)
