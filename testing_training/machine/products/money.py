@@ -17,6 +17,7 @@ class Money:
         else:
             amount = Decimal(amount)
 
+        amount = amount.normalize()
         decimal_tuple = amount.as_tuple()
         if decimal_tuple.sign:
             raise ValueError("Amount has to be positive")
