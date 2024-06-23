@@ -1,2 +1,4 @@
 __pycache__
 .hypothesis/
+testing_training/machine/machine.db
+
