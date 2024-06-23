@@ -1,0 +1,18 @@
+@startuml
+node VM as "Vending Machine" {
+    component "Tablet\nwith a touchscreen" as tablet
+    node "Server" as server {
+        boundary "UI App" as ui
+        component "Backend application"
+        database "SQLite" as db
+    }
+    component "Payment terminal" as terminal
+    component "[Coin acceptor]" as terminal
+    component EnginesController as engines {
+        component engine_1
+        component engine_2
+        component engine_...
+        component engine_n
+    }
+}
+@enduml

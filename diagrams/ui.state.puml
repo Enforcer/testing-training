@@ -1,0 +1,23 @@
+@startuml
+[*] --> ProductsPage
+ProductsPage --> ProductDetailsPage: Click on product
+ProductsPage --> Cart: Navigate to cart
+ProductDetailsPage --> Cart: Navigate to cart
+Cart --> ProductsPage: Navigate to products\n(to buy more)
+Cart --> ProductsPage: Empty cart
+Cart --> PaymentPage: Purchase [len(cart.items) > 0]
+PaymentPage --> DispensingPage: [payment successful]
+DispensingPage --> SuccessPage: [dispensing successful]
+DispensingPage --> ProductsPage: <reset>
+PaymentPage --> PaymentFailedPage: [payment failed]
+PaymentPage --> PaymentTimeoutPage: [payment timeout]
+
+ProductsPage: Displays list of available products
+ProductDetailsPage: Details (price, description, etc.)\nof a single product
+Cart: Shows products added to cart or empty cart
+PaymentPage: Shows prompt urging\ncustomer to use their payment card
+PaymentFailedPage: Shows error message\nwhen payment fails
+PaymentTimeoutPage: Shows error message\nwhen customer didn't pay in time
+DispensingPage: Shows "please wait" while engines are moving\nand products get dispensed
+SuccessPage: Shows "thank you for your purchase" message
+@enduml

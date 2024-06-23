@@ -1,0 +1,13 @@
+@startuml
+[*] --> Idle
+Idle --> AwaitingPayment: New order placed for a single\nor multiple products
+AwaitingPayment --> Dispensing: Payment made
+AwaitingPayment --> Idle: [Payment not made in time]\nOrder cancelled
+AwaitingPayment --> Idle: [Payment failed]\nOrder cancelled
+Dispensing --> Idle: [Successfully dispensed all purchased products]\nStock lowered
+Dispensing --> Idle: [Dispensing of at least one product failed]\nStock lowered for successfuly dispensed products
+
+Idle: No order in progress
+AwaitingPayment: Wait for some time to\nlet customer pay for the order
+Dispensing: Moving the engines to dispense the products
+@enduml
