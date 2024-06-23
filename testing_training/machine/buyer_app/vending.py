@@ -51,6 +51,12 @@ class Vending:
         except httpx.HTTPError:
             order.status = "PAYMENT_FAILED"
         else:
+            self._threadpool.submit(
+                self._timeout_order_after,
+                order_id=order_id,
+                timeout=timedelta(seconds=5),
+            )
+
             def poll_for_success(order_id: int) -> None:
                 start = time.monotonic()
                 while time.monotonic() - start < 5:
@@ -61,7 +67,7 @@ class Vending:
 
                     with MachineSession() as session:
                         vending = Vending(session=session)
-                        vending.payment_successful(order_id)
+                        vending._payment_successful(order_id)
                         session.commit()
 
                     return
@@ -74,21 +80,25 @@ class Vending:
         stmt = select(Order).filter(Order.id == order_id)
         return self._session.execute(stmt).scalars().first()
 
-    def timeout_orders(self, timeout: timedelta) -> None:
+    @staticmethod
+    def _timeout_order_after(order_id: int, timeout: timedelta) -> None:
+        time.sleep(timeout.total_seconds())
         stmt = (
             select(Order)
             .filter(
+                Order.id == order_id,
                 Order.status == "AWAITING_PAYMENT",
-                Order.created_at < datetime.now() - timeout,
             )
             .with_for_update()
         )
 
-        orders = self._session.execute(stmt).scalars().all()
-        for order in orders:
-            order.status = "PAYMENT_TIMEOUT"
+        with MachineSession() as session:
+            orders = session.execute(stmt).scalars().all()
+            for order in orders:
+                order.status = "PAYMENT_TIMEOUT"
+            session.commit()
 
-    def payment_successful(self, order_id: int) -> None:
+    def _payment_successful(self, order_id: int) -> None:
         stmt = (
             select(Order)
             .filter(
@@ -131,9 +141,7 @@ class Vending:
         else:
             stmt = (
                 select(Order)
-                .filter(
-                    Order.id == order_id,
-                )
+                .filter(Order.id == order_id)
                 .with_for_update()
             )
 

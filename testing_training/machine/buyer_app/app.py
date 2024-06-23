@@ -1,10 +1,5 @@
-import time
 import base64
-from contextlib import asynccontextmanager
-from datetime import timedelta
 from pathlib import Path
-from typing import Iterator
-from threading import Thread, Event
 
 from fastapi import FastAPI, Request
 from fastapi.responses import HTMLResponse, JSONResponse
@@ -19,29 +14,7 @@ from testing_training.machine.inventory import get_inventory
 from testing_training.machine.products import list_products
 
 
-@asynccontextmanager
-async def lifespan(_: FastAPI) -> Iterator[None]:
-    def _timeout_payments(event: Event) -> None:
-        TIMEOUT = timedelta(seconds=5)
-
-        while True:
-            if event.is_set():
-                break
-
-            time.sleep(1)
-            with Session() as session:
-                vending = Vending(session=session)
-                vending.timeout_orders(timeout=TIMEOUT)
-                session.commit()
-
-    stop_event = Event()
-    thread = Thread(target=_timeout_payments, args=(stop_event,), daemon=True)
-    thread.start()
-    yield
-    stop_event.set()
-
-
-app = FastAPI(lifespan=lifespan)
+app = FastAPI()
 
 STATIC_FILES_DIR = Path(__file__).parent / "static"
 app.mount("/static", StaticFiles(directory=STATIC_FILES_DIR), name="static")
@@ -111,15 +84,6 @@ def get_order(order_id: str) -> JSONResponse:
 class PaymentNotification(BaseModel):
     order_id: int
     status: str
-
-
-@app.post("/payment/notifications")
-def handle_payment_notification(payload: PaymentNotification) -> JSONResponse:
-    session = Session()
-    vending = Vending(session=session)
-    vending.payment_successful(payload.order_id)
-    session.commit()
-    return JSONResponse(content={"success": True})
 
 
 def _order_to_dict(order: Order) -> dict:

@@ -1,8 +1,6 @@
-import logging
 import asyncio
 from typing import Literal
 
-import httpx
 from fastapi import FastAPI, BackgroundTasks
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel, HttpUrl
@@ -37,9 +35,6 @@ class Payload(BaseModel):
 async def send_notification(order_id: str, url: str) -> None:
     await asyncio.sleep(1)
     _SUCCESSFUL_ORDER_IDS.add(order_id)
-    # response = httpx.post(url, json={"order_id": order_id, "status": "DONE"})
-    # if response.status_code != 200:
-    #     logging.error(f"Failed to send notification for order {order_id}")
 
 
 @app.post("/v1/order")
