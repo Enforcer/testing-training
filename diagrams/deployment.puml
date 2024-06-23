@@ -7,7 +7,7 @@ node VM as "Vending Machine" {
         database "SQLite" as db
     }
     component "Payment terminal" as terminal
-    component "[Coin acceptor]" as terminal
+    component "[Coin acceptor]" as coinacceptor
     component EnginesController as engines {
         component engine_1
         component engine_2
