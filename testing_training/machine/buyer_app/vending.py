@@ -22,8 +22,8 @@ logger = logging.getLogger(__name__)
 
 
 class Vending:
-    def __init__(self, session: Session) -> None:
-        self._session = session
+    def __init__(self, session: Session | None = None) -> None:
+        self._session = session or MachineSession()
         self._threadpool = ThreadPoolExecutor(max_workers=4)
 
     def place_order(self, items: dict[int, int]) -> Order:
@@ -77,6 +77,7 @@ class Vending:
         return order
 
     def get_order(self, order_id: int) -> Order | None:
+        self._session.rollback()
         stmt = select(Order).filter(Order.id == order_id)
         return self._session.execute(stmt).scalars().first()
 
@@ -139,11 +140,7 @@ class Vending:
             logger.exception("Dispensing error!")
             order.status = "DISPENSING_ERROR"
         else:
-            stmt = (
-                select(Order)
-                .filter(Order.id == order_id)
-                .with_for_update()
-            )
+            stmt = select(Order).filter(Order.id == order_id).with_for_update()
 
             order = self._session.execute(stmt).scalars().first()
             order.status = "DONE"

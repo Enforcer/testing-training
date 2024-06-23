@@ -1,14 +1,13 @@
 import time
-from pathlib import Path
 from typing import Callable
 
 import httpx
-from sqlalchemy import create_engine
 
 from testing_training.machine.buyer_app.vending import Vending
-from testing_training.machine.database import Base, Session
+from testing_training.machine.database import Session
 from testing_training.machine.inventory.engine import Engine
 from testing_training.machine.inventory.stock import Stock
+from testing_training.machine.inventory import set_stock_on_engine
 from testing_training.machine.products import add_product, Money, list_products
 from testing_training.machine.products.money import Currency
 from testing_training.tests.machine.buyer_app import tools
@@ -20,13 +19,6 @@ def test_order_succeeds() -> None:
     tools.restore_engine_state()
     tools.restore_terminal()
 
-    sqlite_file = Path(__file__).parent / "test_db.db"
-    Session.remove()
-    engine = create_engine(f"sqlite:///{sqlite_file}")
-    Base.metadata.drop_all(engine)
-    Base.metadata.create_all(engine)
-    Session.configure(bind=engine)
-
     add_product(
         name="Dress",
         description="Nice dress",
@@ -35,21 +27,14 @@ def test_order_succeeds() -> None:
     )
     products = list_products()
     product_id = products[0].id
-    session = Session()
-    stock_1 = Stock(product_id=product_id, quantity=1)
-    session.add(stock_1)
-    session.flush()
-    engine_1 = Engine(row=1, column=1, stock_id=stock_1.id)
-    session.add(engine_1)
-    session.commit()
+    set_stock_on_engine(row=1, column=1, product_id=product_id, quantity=1)
 
-    vending = Vending(session=session)
+    vending = Vending()
     order = vending.place_order(items={product_id: 1})  # order 1 piece of product
     order_id = order.id
-    session.commit()
+    Session().commit()
 
     def wait_until_order_completed() -> bool:
-        session.rollback()
         order = vending.get_order(order_id=order_id)
         return order.status == "DONE"
 
@@ -62,13 +47,6 @@ def test_order_fails_when_payment_terminal_malfunctions() -> None:
     tools.restore_engine_state()
     tools.restore_terminal()
 
-    sqlite_file = Path(__file__).parent / "test_db.db"
-    Session.remove()
-    engine = create_engine(f"sqlite:///{sqlite_file}")
-    Base.metadata.drop_all(engine)
-    Base.metadata.create_all(engine)
-    Session.configure(bind=engine)
-
     tools.simulate_terminal_malfunction()
 
     add_product(
@@ -79,15 +57,9 @@ def test_order_fails_when_payment_terminal_malfunctions() -> None:
     )
     products = list_products()
     product_id = products[0].id
-    session = Session()
-    stock_1 = Stock(product_id=product_id, quantity=1)
-    session.add(stock_1)
-    session.flush()
-    engine_1 = Engine(row=1, column=1, stock_id=stock_1.id)
-    session.add(engine_1)
-    session.commit()
+    set_stock_on_engine(row=1, column=1, product_id=product_id, quantity=1)
 
-    vending = Vending(session=session)
+    vending = Vending()
     order = vending.place_order(items={product_id: 1})  # order 1 piece of product
 
     assert order.status == "PAYMENT_FAILED"

@@ -50,3 +50,24 @@ def lower_stock_on_engine(row: int, column: int) -> None:
         .first()
     )
     stock.quantity = stock.quantity - 1
+
+
+def set_stock_on_engine(row: int, column: int, product_id: int, quantity: int) -> None:
+    session = Session()
+    stmt = select(Engine).filter(Engine.row == row, Engine.column == column)
+    engine = session.execute(stmt).scalars().first()
+    if engine is None:
+        stock = Stock(product_id=product_id, quantity=quantity)
+        session.add(stock)
+        session.flush()
+        engine = Engine(row=row, column=column, stock_id=stock.id)
+        session.add(engine)
+        session.flush()
+    else:
+        stock = (
+            session.execute(select(Stock).filter(Stock.id == engine.stock_id))
+            .scalars()
+            .first()
+        )
+    stock.quantity = quantity
+    session.flush()

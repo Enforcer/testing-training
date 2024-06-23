@@ -1,6 +1,22 @@
+from pathlib import Path
+
 import pytest
 import uvicorn
 from multiprocessing import Process
+
+from sqlalchemy import create_engine
+
+from testing_training.machine.database import Base, Session
+
+
+@pytest.fixture(autouse=True)
+def clean_db() -> None:
+    sqlite_file = Path(__file__).parent / "test_db.db"
+    Session.remove()
+    engine = create_engine(f"sqlite:///{sqlite_file}")
+    Base.metadata.drop_all(engine)
+    Base.metadata.create_all(engine)
+    Session.configure(bind=engine)
 
 
 @pytest.fixture(scope="session", autouse=True)
