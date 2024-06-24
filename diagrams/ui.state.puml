@@ -8,7 +8,7 @@ Cart --> ProductsPage: Empty cart
 Cart --> PaymentPage: Purchase [len(cart.items) > 0]
 PaymentPage --> DispensingPage: [payment successful]
 DispensingPage --> SuccessPage: [dispensing successful]
-DispensingPage --> ProductsPage: <reset>
+SuccessPage --> ProductsPage: <reset>
 PaymentPage --> PaymentFailedPage: [payment failed]
 PaymentPage --> PaymentTimeoutPage: [payment timeout]
 
