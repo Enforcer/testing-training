@@ -5,9 +5,7 @@ import httpx
 
 from testing_training.machine.buyer_app.vending import Vending
 from testing_training.machine.database import Session
-from testing_training.machine.inventory.engine import Engine
-from testing_training.machine.inventory.stock import Stock
-from testing_training.machine.inventory import set_stock_on_engine
+from testing_training.machine.inventory import set_stock_on_engine, get_inventory
 from testing_training.machine.products import add_product, Money, list_products
 from testing_training.machine.products.money import Currency
 from testing_training.tests.machine.buyer_app import tools
