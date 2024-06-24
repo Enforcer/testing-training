@@ -59,8 +59,14 @@ def test_order_fails_when_payment_terminal_malfunctions() -> None:
 
     vending = Vending()
     order = vending.place_order(items={product_id: 1})  # order 1 piece of product
+    order_id = order.id
+    Session().commit()
 
-    assert order.status == "PAYMENT_FAILED"
+    def wait_until_order_failed() -> bool:
+        order = vending.get_order(order_id=order_id)
+        return order.status == "PAYMENT_FAILED"
+
+    wait_until(wait_until_order_failed, timeout=1)
 
 
 def wait_until(condition: Callable[[], bool], timeout: int = 5) -> None:
