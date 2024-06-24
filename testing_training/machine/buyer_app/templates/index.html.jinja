@@ -371,7 +371,7 @@ const app = Vue.createApp({
         <nav class="navbar" role="navigation" aria-label="main navigation">
           <div id="navbarBasicExample" class="navbar-menu">
             <div class="navbar-start">
-              <RouterLink class="navbar-item" to="/products">All products</RouterLink>
+              <RouterLink class="navbar-item link-to-products" to="/products">All products</RouterLink>
             </div>
             <div class="navbar-end">
                 <div class="navbar-item">
@@ -388,7 +388,7 @@ const app = Vue.createApp({
                         {{ $store.state.cart.totalCount }} item(s) worth {{ ($store.state.cart.totalPrice / 100).toFixed(2) }} PLN in your cart
                     </p>
                 </div>
-                <RouterLink class="navbar-item" to="/cart">Go to cart</RouterLink>
+                <RouterLink class="navbar-item link-to-cart" to="/cart">Go to cart</RouterLink>
             </div>
           </div>
         </nav>
