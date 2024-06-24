@@ -1,3 +1,4 @@
+import os
 from pathlib import Path
 
 from sqlalchemy import create_engine
@@ -10,6 +11,6 @@ class Base(DeclarativeBase):
 
 DATABASE_PATH = Path(__file__).parent / "machine.db"
 
-
-engine = create_engine(f"sqlite:///{DATABASE_PATH}")
+engine_url = os.environ.get("DB_ENGINE_URL") or f"sqlite:///{DATABASE_PATH}"
+engine = create_engine(engine_url)
 Session = scoped_session(sessionmaker(bind=engine))

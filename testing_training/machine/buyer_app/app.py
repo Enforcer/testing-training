@@ -41,7 +41,7 @@ def products() -> list[dict]:
             "name": product.name,
             "description": product.description,
             "price": {
-                "amount": product.price.amount,
+                "amount": f"{product.price.amount:.2f}",
                 "currency": product.price.currency.name,
             },
             "image": base64.b64encode(product.image),
@@ -91,7 +91,7 @@ def _order_to_dict(order: Order) -> dict:
         "order_id": order.id,
         "status": order.status,
         "total": {
-            "amount": str(order.total.amount),
+            "amount": f"{order.total.amount:.2f}",
             "currency": order.total.currency.name,
         },
     }

@@ -29,7 +29,7 @@ const ProductsList = Vue.defineComponent({
             <div class="cell" v-for="product in $store.state.products">
                 <div class="card">
                   <div class="card-image">
-                    <button class="image" @click="seeProduct(product.id)">
+                    <button class="image see-product" @click="seeProduct(product.id)">
                       <img
                         :src="'data:image/webp;base64,' + product.image" width="200" height="200"
                         alt="{{ product.name }}"
@@ -39,7 +39,7 @@ const ProductsList = Vue.defineComponent({
                   <div class="card-content">
                     <div class="media">
                       <div class="media-content">
-                        <p class="title is-4">{{ product.name }} <span class="tag is-danger" v-if="$store.getters.quantity(product.id) == 0">Out Of Stock</span></p>
+                        <p class="title is-4 product-title">{{ product.name }} <span class="tag is-danger" v-if="$store.getters.quantity(product.id) == 0">Out Of Stock</span></p>
                         <p class="subtitle is-6">{{ product.price.amount }} {{ product.price.currency }}</p>
                       </div>
                     </div>
@@ -90,9 +90,9 @@ const SingleProductView = Vue.defineComponent({
             <div class="content">
               {{ product.description }}
               <br />
-              <p>In stock: {{ $store.getters.quantity(product.id) }}</p>
-              <button class="button" @click="addToCart(product.id)" :disabled="$store.getters.quantity(product.id) == 0"><i class="fa-solid fa-cart-arrow-down"></i>&nbsp;&nbsp;Add to cart</button>
-              &nbsp;&nbsp;<RouterLink v-if="!$store.getters.isCartEmpty" class="button" to="/cart">Go to cart</RouterLink>
+              <p class="remaining-stock">In stock: {{ $store.getters.quantity(product.id) }}</p>
+              <button class="button add-to-cart" @click="addToCart(product.id)" :disabled="$store.getters.quantity(product.id) == 0"><i class="fa-solid fa-cart-arrow-down"></i>&nbsp;&nbsp;Add to cart</button>
+              &nbsp;&nbsp;<RouterLink v-if="!$store.getters.isCartEmpty" class="button go-to-cart" to="/cart">Go to cart</RouterLink>
             </div>
           </div>
         </div>
@@ -152,9 +152,9 @@ const Cart = Vue.defineComponent({
                 </tfoot>
             </table>
             <div class="buttons">
-                <button class="button is-primary" @click="purchase">Purchase</button>
-                <RouterLink class="button is-warning" to="/products">Continue shopping</RouterLink>
-                <button class="button is-danger" @click="emptyCart">Empty cart</button>
+                <button class="button is-primary purchase-btn" @click="purchase">Purchase</button>
+                <RouterLink class="button is-warning go-to-products" to="/products">Continue shopping</RouterLink>
+                <button class="button is-danger empty-cart-btn" @click="emptyCart">Empty cart</button>
             </div>
           </div>
         </div>
@@ -175,7 +175,7 @@ const Checkout = Vue.defineComponent({
     template: `
         <div>
             <article class="message">
-              <div class="message-header">
+              <div class="message-header checkout-header">
                 <p>{{ $store.getters.titleForPendingOrder }}</p>
               </div>
               <div class="message-body">
@@ -196,6 +196,12 @@ const router = VueRouter.createRouter({
       { path: '/checkout', component: Checkout },
     ]
 })
+router.beforeEach((to, from, next) => {
+    if (to.path === '/products') {
+        store.commit('clearResetUiTimeout')
+    }
+    next()
+})
 
 const store = Vuex.createStore({
     state() {
@@ -208,7 +214,8 @@ const store = Vuex.createStore({
                 totalCount: 0
             },
             order: null,
-            fetchOrderInterval: null
+            fetchOrderInterval: null,
+            resetUiTimeout: null
         }
     },
     getters: {
@@ -230,6 +237,7 @@ const store = Vuex.createStore({
                     "DISPENSING": "Dispensing product(s)...",
                     "DONE": "All good!",
                     "PAYMENT_TIMEOUT": "Failed to pay in time, machine will reset in a few seconds...",
+                    "PAYMENT_FAILED": "There was a problem with the payment",
                     "DISPENSING_ERROR": "There was an error during dispensing, please contact support"
                 }
                 return statusToTitle[state.order.status]
@@ -244,6 +252,7 @@ const store = Vuex.createStore({
                     "DISPENSING": "We've got your payment, dispensing your product(s) now...",
                     "DONE": "Have a nice day!",
                     "PAYMENT_TIMEOUT": "Your order has been cancelled, please try again if you still want to buy the product(s).",
+                    "PAYMENT_FAILED": "Oh, shoot! It seems that payment terminal is not working properly. Our staff has been alarmed.",
                     "DISPENSING_ERROR": "It seems there was an issue with the machine. We've notified our support team. Please try again later."
                 }
                 return messageToTitle[state.order.status]
@@ -285,6 +294,15 @@ const store = Vuex.createStore({
         clearFetchOrderInterval(state) {
             clearInterval(state.fetchOrderInterval)
             state.fetchOrderInterval = null
+        },
+        setResetUiTimeout(state, timeout) {
+            state.resetUiTimeout = timeout
+        },
+        clearResetUiTimeout(state) {
+            state.order = null
+            clearTimeout(state.resetUiTimeout)
+            state.resetUiTimeout = null
+            console.log("Czyszcze!!!")
         }
     },
     actions: {
@@ -322,17 +340,20 @@ const store = Vuex.createStore({
                 const response = await axios.get(`/order/${state.order.order_id}`)
                 if (response.status === 200) {
                     commit('setOrder', response.data)
-                    const ending_statuses = ["DONE", "PAYMENT_TIMEOUT", "DISPENSING_ERROR"]
+                    const ending_statuses = ["DONE", "PAYMENT_TIMEOUT", "PAYMENT_FAILED", "DISPENSING_ERROR"]
                     if (ending_statuses.includes(response.data.status)) {
                         commit('clearFetchOrderInterval')
-                        setTimeout(async () => {
-                            const products_response = await axios.get("/products")
-                            commit('setProducts', products_response.data)
-                            const inventory_response = await axios.get("/inventory")
-                            commit('setInventory', inventory_response.data)
+                        const products_response = await axios.get("/products")
+                        commit('setProducts', products_response.data)
+                        const inventory_response = await axios.get("/inventory")
+                        commit('setInventory', inventory_response.data)
+
+                        const resetUiTimeout = setTimeout(async () => {
                             router.push('/products')
-                            commit('unsetOrder')
+                            commit('clearResetUiTimeout')
+
                         }, 5000)
+                        commit('setResetUiTimeout', resetUiTimeout)
                     }
                 }
             }, 1000)

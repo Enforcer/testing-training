@@ -1,3 +1,4 @@
+import os
 from pathlib import Path
 
 import pytest
@@ -12,8 +13,9 @@ from testing_training.machine.database import Base, Session
 @pytest.fixture(autouse=True)
 def clean_db() -> None:
     sqlite_file = Path(__file__).parent / "test_db.db"
-    Session.remove()
     engine = create_engine(f"sqlite:///{sqlite_file}")
+    os.environ["DB_ENGINE_URL"] = f"sqlite:///{sqlite_file}"
+    Session.remove()
     Base.metadata.drop_all(engine)
     Base.metadata.create_all(engine)
     Session.configure(bind=engine)
