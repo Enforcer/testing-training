@@ -1,0 +1,15 @@
+@startuml
+
+[*] --> Bootstrap
+Bootstrap --> Initialization
+Initialization --> Collection
+Collection --> TestRunning
+TestRunning --> Reporting
+Reporting --> [*]
+
+Bootstrap: Load "early" plugins\nparse command line command\nload config
+Initialization: Register options and plugins\nStart test session
+Collection: Collecting test files with test functions/methods\nParametrization of tests
+TestRunning: Calculating and teardown of fixtures\nRunning tests :)
+Reporting: Generate report[s]
+@enduml
