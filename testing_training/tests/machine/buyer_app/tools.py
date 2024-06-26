@@ -16,7 +16,6 @@ def simulate_engine_error() -> None:
 def restore_engine_state() -> None:
     Serial._TIMEOUT = False
     Serial._SIMULATE_ERROR = False
-    setattr(Serial, "_REWIND_ENGINES", True)
 
 
 def simulate_terminal_malfunction() -> None:

@@ -18,23 +18,7 @@ class SerialTimeoutException(TimeoutError):
     pass
 
 
-class SerialMeta(type):
-    def __setattr__(self, key, value) -> None:
-        if key == "_REWIND_ENGINES":
-            time_until_engines_rewind = random.randint(1, 5)
-            sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-            try:
-                sock.bind(("localhost", 8091))
-                sock.settimeout(time_until_engines_rewind)
-                data, _ = sock.recvfrom(1024)
-            except socket.timeout:
-                pass
-            finally:
-                sock.close()
-        super().__setattr__(key, value)
-
-
-class Serial(metaclass=SerialMeta):
+class Serial:
     def __init__(
         self,
         address: str,
